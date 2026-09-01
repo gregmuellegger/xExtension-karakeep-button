@@ -15,7 +15,7 @@ return array(
       'instance_url' => 'Karakeep instance url',
       'keyboard_shortcut' => 'Keyboard shortcut',
       'extension_disabled' => 'You need to enable the extension before you can connect to Karakeep!',
-      'connected_to_karakeep' => 'You are connected to Karakeep with the account <b>%s</b> using the access token <b>%s</b> at <b>%s</b>.',
+      'connected_to_karakeep' => 'You are connected to Karakeep with the account <b>%s</b> at <b>%s</b>.',
       'revoke_access' => 'Disconnect from Karakeep!'
     ),
     'notifications' => array(

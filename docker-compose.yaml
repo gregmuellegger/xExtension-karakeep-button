@@ -4,6 +4,6 @@ services:
     container_name: freshrss
     volumes:
       - ./fresh_rss_data:/var/www/FreshRSS/data
-      - ./:/var/www/FreshRSS/extensions/freshrss-readeck-button:ro
+      - ./:/var/www/FreshRSS/extensions/xExtension-karakeep-button:ro
     ports:
       - 8080:80

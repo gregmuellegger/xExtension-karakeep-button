@@ -55,16 +55,15 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
       return;
     }
 
-    $instance_url = Minz_Request::paramString('instance_url');
+    $instance_url = rtrim(Minz_Request::paramString('instance_url'), '/');
     $api_token = Minz_Request::paramString('api_token');
 
-    // Handle leading slash
-    if (substr($instance_url, -1) == '/')
-    {
-      $instance_url = substr($instance_url, 0, -1);
-    }
-
     $url_redirect = $this->configureUrl();
+
+    if (!$this->isValidInstanceUrl($instance_url)) {
+      Minz_Request::bad(_t('ext.karakeepButton.notifications.invalid_instance_url'), $url_redirect);
+      return;
+    }
 
     // Validate the credentials before storing them, so that a failed attempt
     // leaves the existing configuration untouched.
@@ -127,6 +126,22 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
     $result = $this->curlPostRequest('/bookmarks', $post_data);
     $result['response'] = array('title' => $entry->title());
     echo json_encode($result);
+  }
+
+  /**
+   * Only absolute http(s) URLs are usable as a Karakeep instance URL.
+   */
+  private function isValidInstanceUrl(string $instance_url): bool
+  {
+    $parts = parse_url($instance_url);
+    if (!is_array($parts)) {
+      return false;
+    }
+
+    $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : '';
+    $host = $parts['host'] ?? '';
+
+    return in_array($scheme, array('http', 'https'), true) && $host !== '';
   }
 
   /**

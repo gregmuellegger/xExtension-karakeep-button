@@ -28,6 +28,7 @@ return array(
       'relog_required' => 'Je nutné provést opětovné přihlášení na Karakeep! Odhlaste se a znovu přihlaste v nastavení rozšíření.',
       'request_access_failed' => 'Žádost o přístup se nezdařila! Kód chyby Karakeep API: %s',
       'article_not_found' => 'Nelze najít článek!',
+      'invalid_instance_url' => 'Neplatná adresa URL instance Karakeep! Zadejte prosím adresu začínající http:// nebo https://.',
     )
   ),
 );

@@ -28,6 +28,7 @@ return array(
       'relog_required' => 'Relog to Karakeep is required! Please log out and log back in in the extension settings.',
       'request_access_failed' => 'Access request failed! Karakeep API error code: %s',
       'article_not_found' => 'Can\'t find article!',
+      'invalid_instance_url' => 'Invalid Karakeep instance url! Please enter a URL starting with http:// or https://.',
     )
   ),
 );

@@ -84,6 +84,13 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
       return;
     }
 
+    // A 403 means the key itself is accepted but lacks the scopes the extension
+    // needs, which is easy to hit with the granular API keys of Karakeep 0.32.0.
+    if ($result['status'] == 403) {
+      Minz_Request::bad(_t('ext.karakeepButton.notifications.request_access_forbidden'), $url_redirect);
+      return;
+    }
+
     Minz_Request::bad(_t('ext.karakeepButton.notifications.request_access_failed', $result['status']), $url_redirect);
   }
 

@@ -7,11 +7,25 @@ With this extension you can simply press the Karakeep Button next to an article 
 1. Download the [latest release](https://github.com/veverkap/xExtension-karakeep-button/releases)
 2. Extract and upload it to the `./extensions` folder of your FreshRSS installation
 3. Go to your Karakeep instance User Settings -> API Keys
-4. Create a new API key
+4. Create a new API key with the [permissions listed below](#required-api-key-permissions)
 5. Enter your Karakeep instance url in the Karakeep Button extension settings
 6. Enter your API key in the Karakeep Button extension settings
 7. Press "Connect to Karakeep"
 8. *Optional Set a custom keyboard shortcut*
+
+## Required API key permissions
+Karakeep 0.32.0 and later lets you restrict an API key to individual scopes. The extension uses two endpoints, so the key needs:
+
+| Scope | Permission | Used for |
+| --- | --- | --- |
+| User account | Read | `GET /api/v1/users/me`, to verify the key and read your username when you press "Connect to Karakeep" |
+| Bookmarks | Read/write | `POST /api/v1/bookmarks`, to save an article |
+
+No other scope is needed, `Assets` included, so everything else can stay at "No access".
+
+Missing the `User account` scope is the common cause of a 403 when connecting: the key can save bookmarks just fine, but the connect step never gets past its check against `/users/me`.
+
+Keys created before 0.32.0, or created with full access, already cover both scopes.
 
 ## Karakeep API Error codes
 If you get errors while trying to connect to Karakeep, please check the [Karakeep API Documentation](https://docs.karakeep.app/api/karakeep-api).

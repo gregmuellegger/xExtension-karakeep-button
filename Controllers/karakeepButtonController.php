@@ -2,19 +2,27 @@
 
 class FreshExtension_karakeepButton_Controller extends Minz_ActionController
 {
+  /** Seconds to wait for the connection to the Karakeep instance to be established. */
+  private const CONNECT_TIMEOUT = 5;
+
+  /** Seconds to wait for the whole request to complete. */
+  private const TIMEOUT = 15;
+
   /** @var KarakeepButton\View */
   protected $view;
 
   public function jsVarsAction(): void
   {
     $extension = Minz_ExtensionManager::findExtension('Karakeep Button');
+    $added_to_karakeep_icon = $extension === null ? '' : $extension->getFileUrl('added_to_karakeep.svg');
+
     $this->view->karakeep_button_vars = array(
       'instance_url' => FreshRSS_Context::userConf()->attributeString('karakeep_instance_url'),
       'keyboard_shortcut' => FreshRSS_Context::userConf()->hasParam("karakeep_shortcut")
         ? FreshRSS_Context::userConf()->attributeString('karakeep_shortcut')
         : '',
       'icons' => array(
-        'added_to_karakeep' => $extension->getFileUrl('added_to_karakeep.svg', 'svg'),
+        'added_to_karakeep' => $added_to_karakeep_icon,
       ),
       'i18n' => array(
         'added_article_to_karakeep' => _t('ext.karakeepButton.notifications.added_article_to_karakeep', '%s'),
@@ -67,7 +75,7 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
 
     // Validate the credentials before storing them, so that a failed attempt
     // leaves the existing configuration untouched.
-    $result = $this->curlGetRequest('/users/me', $instance_url, $api_token);
+    $result = $this->curlRequest('GET', '/users/me', null, $instance_url, $api_token);
     if ($result['status'] == 200) {
       FreshRSS_Context::userConf()->_attribute('karakeep_instance_url', $instance_url);
       FreshRSS_Context::userConf()->_attribute('karakeep_api_token', $api_token);
@@ -123,7 +131,7 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
     );
 
     // Errors are handled in the JS
-    $result = $this->curlPostRequest('/bookmarks', $post_data);
+    $result = $this->curlRequest('POST', '/bookmarks', $post_data);
     $result['response'] = array('title' => $entry->title());
     echo json_encode($result);
   }
@@ -178,64 +186,57 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_HEADER, true);
+    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, self::CONNECT_TIMEOUT);
+    curl_setopt($curl, CURLOPT_TIMEOUT, self::TIMEOUT);
+    // The Karakeep API never redirects; following one would replay the API token
+    // against whatever host the redirect points at.
+    curl_setopt($curl, CURLOPT_FOLLOWLOCATION, false);
+    curl_setopt($curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
     return $curl;
   }
 
   /**
-   * Perform a GET request against the Karakeep API.
+   * Perform a request against the Karakeep API.
    *
    * The instance URL and API token default to the values stored in the user
    * configuration, but can be overridden to test credentials that have not
    * been persisted (yet).
    *
+   * @param array<string,mixed>|null $body
    * @return array<string,mixed>
    */
-  private function curlGetRequest(string $endpoint, ?string $instance_url = null, ?string $api_token = null): array
+  private function curlRequest(string $method, string $endpoint, ?array $body = null, ?string $instance_url = null, ?string $api_token = null): array
   {
-    $instance_url ??= FreshRSS_Context::userConf()->attributeString('karakeep_instance_url');
-    $api_token ??= FreshRSS_Context::userConf()->attributeString('karakeep_api_token');
-    $curl = $this->getCurlBase($instance_url . "/api/v1" . $endpoint, $api_token);
+    $instance_url ??= FreshRSS_Context::userConf()->attributeString('karakeep_instance_url') ?? '';
+    $api_token ??= FreshRSS_Context::userConf()->attributeString('karakeep_api_token') ?? '';
+    $curl = $this->getCurlBase($instance_url . '/api/v1' . $endpoint, $api_token);
+    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
 
-    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'GET');
+    if ($body !== null) {
+      curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($body));
+    }
 
     $response = curl_exec($curl);
-    $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
-    $response_header = substr($response, 0, $header_size);
+    if (!is_string($response)) {
+      $error = curl_error($curl);
+      return array(
+        'response' => null,
+        'status' => 0,
+        'errorCode' => 0,
+        'error' => $error === '' ? 'cURL request failed' : $error,
+      );
+    }
+
+    $status = intval(curl_getinfo($curl, CURLINFO_HTTP_CODE));
+    $header_size = intval(curl_getinfo($curl, CURLINFO_HEADER_SIZE));
+    $response_headers = $this->httpHeaderToArray(substr($response, 0, $header_size));
     $response_body = substr($response, $header_size);
-    $response_headers = $this->httpHeaderToArray($response_header);
 
     return array(
       'response' => json_decode($response_body),
-      'status' => curl_getinfo($curl, CURLINFO_HTTP_CODE),
-      'errorCode' => isset($response_headers['x-error-code']) ? intval($response_headers['x-error-code']) : curl_getinfo($curl, CURLINFO_HTTP_CODE)
-    );
-  }
-
-  /**
-   * @param array<string,mixed> $post_data
-   * @return array<string,mixed>
-   */
-  private function curlPostRequest(string $endpoint, array $post_data): array
-  {
-    $instance_url = FreshRSS_Context::userConf()->attributeString('karakeep_instance_url');
-    $api_token = FreshRSS_Context::userConf()->attributeString('karakeep_api_token');
-    $curl = $this->getCurlBase($instance_url . "/api/v1" . $endpoint, $api_token);
-    curl_setopt($curl, CURLOPT_POST, true);
-    curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data));
-
-    $response = curl_exec($curl);
-
-    $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
-    $response_header = substr($response, 0, $header_size);
-    $response_body = substr($response, $header_size);
-    $response_headers = $this->httpHeaderToArray($response_header);
-
-    return array(
-      'response' => json_decode($response_body),
-      'status' => curl_getinfo($curl, CURLINFO_HTTP_CODE),
-      'errorCode' => isset($response_headers['x-error-code'])
-        ? intval($response_headers['x-error-code'])
-        : curl_getinfo($curl, CURLINFO_HTTP_CODE)
+      'status' => $status,
+      'errorCode' => isset($response_headers['x-error-code']) ? intval($response_headers['x-error-code']) : $status,
+      'error' => null,
     );
   }
 

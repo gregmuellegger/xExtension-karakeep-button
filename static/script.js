@@ -1,3 +1,5 @@
+const pending_entries = {};
+
 if (document.readyState && document.readyState !== 'loading')
 {
   documentReady();
@@ -61,14 +63,14 @@ async function documentReady()
   }
 }
 
-function requestFailed(activeId, karakeepButtonImg, loadingAnimation)
+function requestFailed(activeId, karakeepButtonImg, loadingAnimation, status)
 {
   delete pending_entries[activeId];
 
   karakeepButtonImg.classList.remove("disabled");
   loadingAnimation.classList.add("disabled");
 
-  badAjax(this.status == 403);
+  badAjax(status == 403);
 }
 
 async function add_to_karakeep(karakeepButton, active)
@@ -111,23 +113,24 @@ async function add_to_karakeep(karakeepButton, active)
       karakeepButtonImg.classList.remove("disabled");
       loadingAnimation.classList.add("disabled");
 
-      if (!response.ok)
+      // The body has to be read before branching on `response.ok`: an error
+      // response is not necessarily JSON, and its error code is what the
+      // notification below reports.
+      let json = null;
+      try
       {
-        requestFailed(activeId, karakeepButtonImg, loadingAnimation);
-        openNotification(karakeep_button_vars.i18n.failed_to_add_article_to_karakeep.replace('%s', json.errorCode), 'karakeep_button_bad');
-        return;
+        json = await response.json();
+      } catch (e)
+      {
+        json = null;
       }
 
-      let json = await response.json();
-      if (!json)
+      if (!response.ok || !json)
       {
-        requestFailed(activeId, karakeepButtonImg, loadingAnimation);
-        openNotification(karakeep_button_vars.i18n.failed_to_add_article_to_karakeep.replace('%s', json.errorCode), 'karakeep_button_bad');
+        requestFailed(activeId, karakeepButtonImg, loadingAnimation, response.status);
+        openNotification(karakeep_button_vars.i18n.failed_to_add_article_to_karakeep.replace('%s', (json && json.errorCode) || response.status), 'karakeep_button_bad');
         return;
       }
-
-      console.log(karakeep_button_vars);
-      console.log(json.errorCode);
 
       switch (json.errorCode)
       {
@@ -152,7 +155,7 @@ async function add_to_karakeep(karakeepButton, active)
           break;
 
         default:
-          requestFailed(activeId, karakeepButtonImg, loadingAnimation);
+          requestFailed(activeId, karakeepButtonImg, loadingAnimation, response.status);
           break;
       }
     });

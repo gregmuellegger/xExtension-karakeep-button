@@ -6,7 +6,7 @@ return array(
       'api_token' => 'API token',
       'api_token_description' => '<ul class="listedNumbers">
         <li>Go to your Karakeep instance and navigate to \'<c>User Settings -> API Keys</c>\'</li>
-        <li>Create a new API key</li>
+        <li>Create a new API key with the \'<c>User account</c>\' scope set to <c>read</c> and the \'<c>Bookmarks</c>\' scope set to <c>read/write</c></li>
         <li>Enter your Karakeep instance url and API token and hit \'Connect to Karakeep\'</li>
       </ul>
       <span>Details can be found on <a href="https://docs.karakeep.app/api/karakeep-api" target="_blank">Karakeep API Documentation</a>!',
@@ -27,6 +27,7 @@ return array(
       'authorized_failed' => 'Authorization failed! Karakeep API error code: %s',
       'relog_required' => 'Relog to Karakeep is required! Please log out and log back in in the extension settings.',
       'request_access_failed' => 'Access request failed! Karakeep API error code: %s',
+      'request_access_forbidden' => 'Access request failed! Karakeep rejected the API key (403). Make sure the key grants the \'User account\' scope read access and the \'Bookmarks\' scope read/write access.',
       'article_not_found' => 'Can\'t find article!',
       'invalid_instance_url' => 'Invalid Karakeep instance url! Please enter a URL starting with http:// or https://.',
     )

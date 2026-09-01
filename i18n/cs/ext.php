@@ -6,7 +6,7 @@ return array(
       'api_token' => 'Token API',
       'api_token_description' => '<ul class="listedNumbers">
         <li>Navigujte do své Karakeep instance na \'<c>Nastavení -> API klíče</c>\'</li>
-        <li>Vytvořte nový API klíč</li>
+        <li>Vytvořte nový API klíč s oprávněním \'<c>User account</c>\' nastaveným na <c>read</c> a \'<c>Bookmarks</c>\' nastaveným na <c>read/write</c></li>
         <li>Zadejte URL své Karakeep instance a API token a klikněte na \'Připojit se ke Karakeep\'</li>
       </ul>
       <span>Podrobnosti naleznete na <a href="https://docs.karakeep.app/api/karakeep-api" target="_blank">Karakeep API dokumentaci</a>!',
@@ -27,6 +27,7 @@ return array(
       'authorized_failed' => 'Autorizace selhala! Chyba Karakeep API: %s',
       'relog_required' => 'Je nutné provést opětovné přihlášení na Karakeep! Odhlaste se a znovu přihlaste v nastavení rozšíření.',
       'request_access_failed' => 'Žádost o přístup se nezdařila! Kód chyby Karakeep API: %s',
+      'request_access_forbidden' => 'Žádost o přístup se nezdařila! Karakeep odmítl API klíč (403). Ujistěte se, že klíč má oprávnění \'User account\' na read a \'Bookmarks\' na read/write.',
       'article_not_found' => 'Nelze najít článek!',
       'invalid_instance_url' => 'Neplatná adresa URL instance Karakeep! Zadejte prosím adresu začínající http:// nebo https://.',
     )

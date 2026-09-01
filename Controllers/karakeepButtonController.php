@@ -31,8 +31,30 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
     header('Content-Type: application/javascript; charset=utf-8');
   }
 
+  /**
+   * State changing actions must be POST requests carrying a valid CSRF token,
+   * mirroring the protection FreshRSS core applies to its own POST actions.
+   */
+  private function isSafePostRequest(): bool
+  {
+    return Minz_Request::isPost() && FreshRSS_Auth::isCsrfOk();
+  }
+
+  /**
+   * @return array{c:string,a:string,params:array<string,string>}
+   */
+  private function configureUrl(): array
+  {
+    return array('c' => 'extension', 'a' => 'configure', 'params' => array('e' => 'Karakeep Button'));
+  }
+
   public function requestAccessAction(): void
   {
+    if (!$this->isSafePostRequest()) {
+      Minz_Request::bad(_t('feedback.access.denied'), $this->configureUrl());
+      return;
+    }
+
     $instance_url = Minz_Request::paramString('instance_url');
     $api_token = Minz_Request::paramString('api_token');
 
@@ -42,7 +64,7 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
       $instance_url = substr($instance_url, 0, -1);
     }
 
-    $url_redirect = array('c' => 'extension', 'a' => 'configure', 'params' => array('e' => 'Karakeep Button'));
+    $url_redirect = $this->configureUrl();
 
     // Validate the credentials before storing them, so that a failed attempt
     // leaves the existing configuration untouched.
@@ -62,18 +84,29 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
 
   public function revokeAccessAction(): void
   {
+    if (!$this->isSafePostRequest()) {
+      Minz_Request::bad(_t('feedback.access.denied'), $this->configureUrl());
+      return;
+    }
+
     FreshRSS_Context::userConf()->_attribute('karakeep_instance_url');
     FreshRSS_Context::userConf()->_attribute('karakeep_api_token');
     FreshRSS_Context::userConf()->_attribute('karakeep_username');
     FreshRSS_Context::userConf()->save();
 
-    $url_redirect = array('c' => 'extension', 'a' => 'configure', 'params' => array('e' => 'Karakeep Button'));
+    $url_redirect = $this->configureUrl();
     Minz_Request::forward($url_redirect);
   }
 
   public function addAction(): void
   {
     $this->view->_layout(null);
+
+    if (!$this->isSafePostRequest()) {
+      header('HTTP/1.1 405 Method Not Allowed');
+      echo json_encode(array('errorCode' => 405));
+      return;
+    }
 
     $entry_id = Minz_Request::paramString('id');
     $entry_dao = FreshRSS_Factory::createEntryDao();

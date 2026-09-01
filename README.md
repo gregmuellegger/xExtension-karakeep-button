@@ -32,6 +32,8 @@ All changes in the PHP files are loaded with each page refresh.
 
 ## Credits
 
-This extension is based on [freshrss-readeck-button](https://github.com/Joedmin/xExtension-readeck-button) and re-branded for Karakeep.
+This extension is a fork of [xExtension-karakeep-button](https://github.com/veverkap/xExtension-karakeep-button) by [veverkap](https://github.com/veverkap).
+
+That extension is in turn based on [xExtension-readeck-button](https://github.com/Joedmin/xExtension-readeck-button) and re-branded for Karakeep.
 
 Thank you very much [Joedmin](https://github.com/Joedmin) for creating the Readeck extension.

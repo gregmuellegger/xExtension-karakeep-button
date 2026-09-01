@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 /** @var KarakeepButtonExtension $this */
-$instance_url = FreshRSS_Context::userConf()->attributeString('karakeep_instance_url');
-$api_token = FreshRSS_Context::userConf()->attributeString('karakeep_api_token');
-$username = FreshRSS_Context::userConf()->attributeString('karakeep_username');
-$keyboard_shortcut = FreshRSS_Context::userConf()->attributeString('karakeep_shortcut');
+$instance_url = FreshRSS_Context::userConf()->attributeString('karakeep_instance_url') ?? '';
+$api_token = FreshRSS_Context::userConf()->attributeString('karakeep_api_token') ?? '';
+$username = FreshRSS_Context::userConf()->attributeString('karakeep_username') ?? '';
+$keyboard_shortcut = FreshRSS_Context::userConf()->attributeString('karakeep_shortcut') ?? '';
 ?>
 
 <form action="<?= _url('extension', 'configure', 'e', urlencode($this->getName())); ?>" method="post">

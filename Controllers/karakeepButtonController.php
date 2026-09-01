@@ -17,10 +17,8 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
     $added_to_karakeep_icon = $extension === null ? '' : $extension->getFileUrl('added_to_karakeep.svg');
 
     $this->view->karakeep_button_vars = array(
-      'instance_url' => FreshRSS_Context::userConf()->attributeString('karakeep_instance_url'),
-      'keyboard_shortcut' => FreshRSS_Context::userConf()->hasParam("karakeep_shortcut")
-        ? FreshRSS_Context::userConf()->attributeString('karakeep_shortcut')
-        : '',
+      'instance_url' => FreshRSS_Context::userConf()->attributeString('karakeep_instance_url') ?? '',
+      'keyboard_shortcut' => FreshRSS_Context::userConf()->attributeString('karakeep_shortcut') ?? '',
       'icons' => array(
         'added_to_karakeep' => $added_to_karakeep_icon,
       ),

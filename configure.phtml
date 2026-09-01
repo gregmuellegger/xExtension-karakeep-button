@@ -13,7 +13,7 @@ $keyboard_shortcut = FreshRSS_Context::userConf()->attributeString('karakeep_sho
   <div class="form-group">
     <label class="group-name" for="keyboard_shortcut"><?= _t('ext.karakeepButton.configure.keyboard_shortcut'); ?></label>
     <div class="group-controls">
-      <input type="text" name="keyboard_shortcut" id="keyboard_shortcut" maxlength="1" value="<?= $keyboard_shortcut; ?>">
+      <input type="text" name="keyboard_shortcut" id="keyboard_shortcut" maxlength="1" value="<?= htmlspecialchars($keyboard_shortcut, ENT_QUOTES, 'UTF-8'); ?>">
     </div>
   </div>
 
@@ -30,7 +30,7 @@ $keyboard_shortcut = FreshRSS_Context::userConf()->attributeString('karakeep_sho
     <div class="form-group">
       <label class="group-name" for="instance_url"><?= _t('ext.karakeepButton.configure.instance_url'); ?></label>
       <div class="group-controls">
-        <input type="url" name="instance_url" id="instance_url" title="Please enter a valid URL starting with http:// or https://" value="<?= $instance_url; ?>" required>
+        <input type="url" name="instance_url" id="instance_url" title="Please enter a valid URL starting with http:// or https://" value="<?= htmlspecialchars($instance_url, ENT_QUOTES, 'UTF-8'); ?>" required>
       </div>
       <label class="group-name" for="api_token"><?= _t('ext.karakeepButton.configure.api_token'); ?></label>
       <div class="group-controls">
@@ -56,7 +56,9 @@ $keyboard_shortcut = FreshRSS_Context::userConf()->attributeString('karakeep_sho
 
 <?php if (!empty($username) && !empty($api_token) && !empty($instance_url)) : ?>
   <p class="alert alert-success">
-    <?= _t('ext.karakeepButton.configure.connected_to_karakeep', $username, $instance_url); ?>
+    <?= _t('ext.karakeepButton.configure.connected_to_karakeep',
+      htmlspecialchars($username, ENT_QUOTES, 'UTF-8'),
+      htmlspecialchars($instance_url, ENT_QUOTES, 'UTF-8')); ?>
   </p>
   <form action="<?= _url('karakeepButton', 'revokeAccess'); ?>" method="post">
     <input type="hidden" name="_csrf" value="<?= FreshRSS_Auth::csrfToken(); ?>" />

@@ -15,7 +15,7 @@ return array(
       'instance_url' => 'URL adresa instance Karakeep',
       'keyboard_shortcut' => ' Klávesová zkratka',
       'extension_disabled' => 'Před připojením ke službě Karakeep je nutné rozšíření povolit!',
-      'connected_to_karakeep' => 'Jste připojeni ke Karakeep skrze účet <b>%s</b> zapomocí API tokenu <b>%s</b> na adrese <b>%s</b>.',
+      'connected_to_karakeep' => 'Jste připojeni ke Karakeep skrze účet <b>%s</b> na adrese <b>%s</b>.',
       'revoke_access' => 'Odpojit se od Karakeep!'
     ),
     'notifications' => array(

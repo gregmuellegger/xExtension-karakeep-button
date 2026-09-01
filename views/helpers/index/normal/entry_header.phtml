@@ -30,7 +30,7 @@
 
 		$extension = Minz_ExtensionManager::findExtension('Karakeep Button');
 		if ($extension !== null) {
-			$karakeep_button_icon = $extension->getFileUrl('add_to_karakeep.svg', 'svg');
+			$karakeep_button_icon = $extension->getFileUrl('add_to_karakeep.svg');
 			?>
 			<li class="item manage"><?php
 				$arUrl = array('c' => 'karakeepButton', 'a' => 'add', 'params' => array('id' => $this->entry->id()));

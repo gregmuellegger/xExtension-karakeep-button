@@ -14,7 +14,7 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
   public function jsVarsAction(): void
   {
     $extension = Minz_ExtensionManager::findExtension('Karakeep Button');
-    $added_to_karakeep_icon = $extension === null ? '' : $extension->getFileUrl('added_to_karakeep.svg', 'svg');
+    $added_to_karakeep_icon = $extension === null ? '' : $extension->getFileUrl('added_to_karakeep.svg');
 
     $this->view->karakeep_button_vars = array(
       'instance_url' => FreshRSS_Context::userConf()->attributeString('karakeep_instance_url'),

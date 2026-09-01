@@ -8,7 +8,7 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
   public function jsVarsAction(): void
   {
     $extension = Minz_ExtensionManager::findExtension('Karakeep Button');
-    $this->view->karakeep_button_vars = json_encode(array(
+    $this->view->karakeep_button_vars = array(
       'instance_url' => FreshRSS_Context::userConf()->attributeString('karakeep_instance_url'),
       'keyboard_shortcut' => FreshRSS_Context::userConf()->hasParam("karakeep_shortcut")
         ? FreshRSS_Context::userConf()->attributeString('karakeep_shortcut')
@@ -23,7 +23,7 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
         'article_not_found' => _t('ext.karakeepButton.notifications.article_not_found'),
         'relog_required' => _t('ext.karakeepButton.notifications.relog_required'),
       )
-    ));
+    );
 
     $this->view->_layout(null);
     $this->view->_path('karakeepButton/vars.js');

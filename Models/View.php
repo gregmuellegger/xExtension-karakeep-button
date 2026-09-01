@@ -6,6 +6,7 @@ namespace KarakeepButton;
 
 final class View extends \Minz_View {
 
-  public string $karakeep_button_vars = '';
+  /** @var array<string,mixed> */
+  public array $karakeep_button_vars = [];
 
 }

@@ -8,7 +8,7 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
   public function jsVarsAction(): void
   {
     $extension = Minz_ExtensionManager::findExtension('Karakeep Button');
-    $this->view->karakeep_button_vars = json_encode(array(
+    $this->view->karakeep_button_vars = array(
       'instance_url' => FreshRSS_Context::userConf()->attributeString('karakeep_instance_url'),
       'keyboard_shortcut' => FreshRSS_Context::userConf()->hasParam("karakeep_shortcut")
         ? FreshRSS_Context::userConf()->attributeString('karakeep_shortcut')
@@ -23,7 +23,7 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
         'article_not_found' => _t('ext.karakeepButton.notifications.article_not_found'),
         'relog_required' => _t('ext.karakeepButton.notifications.relog_required'),
       )
-    ));
+    );
 
     $this->view->_layout(null);
     $this->view->_path('karakeepButton/vars.js');
@@ -31,49 +31,81 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
     header('Content-Type: application/javascript; charset=utf-8');
   }
 
+  /**
+   * State changing actions must be POST requests carrying a valid CSRF token,
+   * mirroring the protection FreshRSS core applies to its own POST actions.
+   */
+  private function isSafePostRequest(): bool
+  {
+    return Minz_Request::isPost() && FreshRSS_Auth::isCsrfOk();
+  }
+
+  /**
+   * @return array{c:string,a:string,params:array<string,string>}
+   */
+  private function configureUrl(): array
+  {
+    return array('c' => 'extension', 'a' => 'configure', 'params' => array('e' => 'Karakeep Button'));
+  }
+
   public function requestAccessAction(): void
   {
-    $instance_url = Minz_Request::paramString('instance_url');
-    $api_token = Minz_Request::paramString('api_token');
-
-    // Handle leading slash
-    if (substr($instance_url, -1) == '/')
-    {
-      $instance_url = substr($instance_url, 0, -1);
+    if (!$this->isSafePostRequest()) {
+      Minz_Request::bad(_t('feedback.access.denied'), $this->configureUrl());
+      return;
     }
 
-    FreshRSS_Context::userConf()->_attribute('karakeep_instance_url', $instance_url);
-    FreshRSS_Context::userConf()->_attribute('karakeep_api_token', $api_token);
-    FreshRSS_Context::userConf()->save();
+    $instance_url = rtrim(Minz_Request::paramString('instance_url'), '/');
+    $api_token = Minz_Request::paramString('api_token');
 
-    $result = $this->curlGetRequest('/users/me');
+    $url_redirect = $this->configureUrl();
+
+    if (!$this->isValidInstanceUrl($instance_url)) {
+      Minz_Request::bad(_t('ext.karakeepButton.notifications.invalid_instance_url'), $url_redirect);
+      return;
+    }
+
+    // Validate the credentials before storing them, so that a failed attempt
+    // leaves the existing configuration untouched.
+    $result = $this->curlGetRequest('/users/me', $instance_url, $api_token);
     if ($result['status'] == 200) {
-      FreshRSS_Context::userConf()->_attribute('karakeep_username', $result['response']->name);
+      FreshRSS_Context::userConf()->_attribute('karakeep_instance_url', $instance_url);
+      FreshRSS_Context::userConf()->_attribute('karakeep_api_token', $api_token);
+      FreshRSS_Context::userConf()->_attribute('karakeep_username', $this->extractUsername($result['response']));
       FreshRSS_Context::userConf()->save();
 
-      $url_redirect = array('c' => 'extension', 'a' => 'configure', 'params' => array('e' => 'Karakeep Button'));
       Minz_Request::good(_t('ext.karakeepButton.notifications.authorized_success'), $url_redirect);
       return;
     }
 
-    $url_redirect = array('c' => 'extension', 'a' => 'configure', 'params' => array('e' => 'Karakeep Button'));
     Minz_Request::bad(_t('ext.karakeepButton.notifications.request_access_failed', $result['status']), $url_redirect);
   }
 
   public function revokeAccessAction(): void
   {
+    if (!$this->isSafePostRequest()) {
+      Minz_Request::bad(_t('feedback.access.denied'), $this->configureUrl());
+      return;
+    }
+
     FreshRSS_Context::userConf()->_attribute('karakeep_instance_url');
     FreshRSS_Context::userConf()->_attribute('karakeep_api_token');
     FreshRSS_Context::userConf()->_attribute('karakeep_username');
     FreshRSS_Context::userConf()->save();
 
-    $url_redirect = array('c' => 'extension', 'a' => 'configure', 'params' => array('e' => 'Karakeep Button'));
+    $url_redirect = $this->configureUrl();
     Minz_Request::forward($url_redirect);
   }
 
   public function addAction(): void
   {
     $this->view->_layout(null);
+
+    if (!$this->isSafePostRequest()) {
+      header('HTTP/1.1 405 Method Not Allowed');
+      echo json_encode(array('errorCode' => 405));
+      return;
+    }
 
     $entry_id = Minz_Request::paramString('id');
     $entry_dao = FreshRSS_Factory::createEntryDao();
@@ -97,11 +129,37 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
   }
 
   /**
+   * Only absolute http(s) URLs are usable as a Karakeep instance URL.
+   */
+  private function isValidInstanceUrl(string $instance_url): bool
+  {
+    $parts = parse_url($instance_url);
+    if (!is_array($parts)) {
+      return false;
+    }
+
+    $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : '';
+    $host = $parts['host'] ?? '';
+
+    return in_array($scheme, array('http', 'https'), true) && $host !== '';
+  }
+
+  /**
+   * Read the username out of a Karakeep /users/me response.
+   */
+  private function extractUsername(mixed $response): string
+  {
+    if (is_object($response) && isset($response->name) && is_string($response->name)) {
+      return $response->name;
+    }
+    return '';
+  }
+
+  /**
    * @return array<string>
    */
-  private function getRequestHeaders(): array
+  private function getRequestHeaders(string $api_token): array
   {
-    $api_token = FreshRSS_Context::userConf()->attributeString('karakeep_api_token');
     return array(
       'Content-Type: application/json; charset=UTF-8',
       'Accept: application/json',
@@ -112,9 +170,9 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
   /**
    * @return \CurlHandle
    */
-  private function getCurlBase(string $url): \CurlHandle
+  private function getCurlBase(string $url, string $api_token): \CurlHandle
   {
-    $headers = $this->getRequestHeaders();
+    $headers = $this->getRequestHeaders($api_token);
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $url);
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
@@ -124,12 +182,19 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
   }
 
   /**
+   * Perform a GET request against the Karakeep API.
+   *
+   * The instance URL and API token default to the values stored in the user
+   * configuration, but can be overridden to test credentials that have not
+   * been persisted (yet).
+   *
    * @return array<string,mixed>
    */
-  private function curlGetRequest(string $endpoint): array
+  private function curlGetRequest(string $endpoint, ?string $instance_url = null, ?string $api_token = null): array
   {
-    $instance_url = FreshRSS_Context::userConf()->attributeString('karakeep_instance_url');
-    $curl = $this->getCurlBase($instance_url . "/api/v1" . $endpoint);
+    $instance_url ??= FreshRSS_Context::userConf()->attributeString('karakeep_instance_url');
+    $api_token ??= FreshRSS_Context::userConf()->attributeString('karakeep_api_token');
+    $curl = $this->getCurlBase($instance_url . "/api/v1" . $endpoint, $api_token);
 
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'GET');
 
@@ -153,7 +218,8 @@ class FreshExtension_karakeepButton_Controller extends Minz_ActionController
   private function curlPostRequest(string $endpoint, array $post_data): array
   {
     $instance_url = FreshRSS_Context::userConf()->attributeString('karakeep_instance_url');
-    $curl = $this->getCurlBase($instance_url . "/api/v1" . $endpoint);
+    $api_token = FreshRSS_Context::userConf()->attributeString('karakeep_api_token');
+    $curl = $this->getCurlBase($instance_url . "/api/v1" . $endpoint, $api_token);
     curl_setopt($curl, CURLOPT_POST, true);
     curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data));
 
